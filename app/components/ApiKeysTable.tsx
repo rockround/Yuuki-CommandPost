@@ -1,6 +1,7 @@
 import React from 'react';
 import { EyeIcon, ClipboardIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { ApiKey } from '../lib/apiKeys';
+import { useRouter } from 'next/navigation';
 
 interface ApiKeysTableProps {
   apiKeys: ApiKey[];
@@ -13,7 +14,45 @@ interface ApiKeysTableProps {
   maskKey: (key: string) => string;
 }
 
+async function findBestMatchingRepo(name: string): Promise<string | null> {
+  // Use GitHub search API to find the best matching public repo
+  const res = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(name)}&sort=stars&order=desc&type=Repositories&per_page=1`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.items && data.items.length > 0) {
+    return data.items[0].html_url;
+  }
+  return null;
+}
+
 export default function ApiKeysTable({ apiKeys, onEdit, onDelete, onShow, onCopy, visibleKeyId, copiedKeyId, maskKey }: ApiKeysTableProps) {
+  const router = useRouter();
+
+  const handleSummarize = async (key: typeof apiKeys[0]) => {
+    const repoUrl = await findBestMatchingRepo(key.name);
+    if (!repoUrl) {
+      alert('No matching public GitHub repo found.');
+      return;
+    }
+    const res = await fetch('/api/github-summarizer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key.key,
+      },
+      body: JSON.stringify({ githubUrl: repoUrl }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      // Store summary and readme in sessionStorage
+      sessionStorage.setItem(`summary:${repoUrl}`, data.summary);
+      if (data.readme) sessionStorage.setItem(`readme:${repoUrl}`, data.readme);
+      router.push(`/github-summarizer?repoUrl=${encodeURIComponent(repoUrl)}`);
+    } else {
+      alert(data.error || 'Failed to summarize.');
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -64,6 +103,13 @@ export default function ApiKeysTable({ apiKeys, onEdit, onDelete, onShow, onCopy
                     onClick={() => onDelete(k.id)}
                   >
                     <TrashIcon className="w-5 h-5 text-gray-500" />
+                  </button>
+                  <button
+                    className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-medium"
+                    title="Summarize on GitHub"
+                    onClick={() => handleSummarize(k)}
+                  >
+                    Summarize
                   </button>
                 </div>
               </td>

@@ -8,6 +8,8 @@ import Sidebar from "../components/Sidebar";
 import ApiKeyModal from "../components/ApiKeyModal";
 import ApiKeysTable from "../components/ApiKeysTable";
 import { ApiKey, getApiKeys, createApiKey, updateApiKey, deleteApiKey } from '../lib/apiKeys';
+import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 function maskKey(key: string) {
   return key.slice(0, 5) + "-" + "*".repeat(key.length - 9) + key.slice(-4);
@@ -23,8 +25,9 @@ function generateApiKey() {
 }
 
 export default function Dashboard() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [visibleKeyId, setVisibleKeyId] = useState<string | null>(null);
@@ -33,6 +36,13 @@ export default function Dashboard() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
   const [modalLoading, setModalLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   // Fetch API keys from Supabase on mount
   useEffect(() => {

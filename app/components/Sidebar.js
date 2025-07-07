@@ -1,12 +1,13 @@
 'use client';
 import React from "react";
-import { HomeIcon, KeyIcon, LockClosedIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, KeyIcon, LockClosedIcon, UserCircleIcon, CodeBracketIcon } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 const tabs = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Dashboard', href: '/dashboards', icon: KeyIcon },
+  { name: 'GitHub Summarizer', href: '/github-summarizer', icon: CodeBracketIcon },
   { name: 'Login', href: '/login', icon: LockClosedIcon },
 ];
 
